@@ -1,14 +1,15 @@
 name: coverage
 run-name: coverage diffagent [${{ github.ref_name }}]
 
-# Line coverage of the Rust tests on main, for the README badge. It is its own
-# workflow so the build badge reflects only the unit gate in rust.yml. Only main's
-# merged code runs here, since the job can mint an OIDC token.
+# Line coverage of the Rust tests on main, for the README badge, on each push and by
+# hand. It is its own workflow so the build badge reflects only the unit gate in
+# rust.yml. Only main's merged code runs here, since the job can mint an OIDC token.
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,6 +17,7 @@ permissions:
 jobs:
   coverage:
     name: llvm-cov
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
