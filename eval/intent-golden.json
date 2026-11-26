@@ -1,0 +1,79 @@
+[
+  {
+    "fixture": "false_positive_codeswitch",
+    "total": 2,
+    "confusion": {
+      "false-positive": {
+        "false-positive": 2
+      }
+    },
+    "fp_precision": 1,
+    "accuracy": 1
+  },
+  {
+    "fixture": "false_positive_en",
+    "total": 2,
+    "confusion": {
+      "false-positive": {
+        "false-positive": 2
+      }
+    },
+    "fp_precision": 1,
+    "accuracy": 1
+  },
+  {
+    "fixture": "false_positive_id",
+    "total": 2,
+    "confusion": {
+      "false-positive": {
+        "false-positive": 2
+      }
+    },
+    "fp_precision": 1,
+    "accuracy": 1
+  },
+  {
+    "fixture": "question",
+    "total": 4,
+    "confusion": {
+      "question": {
+        "question": 4
+      }
+    },
+    "fp_precision": 1,
+    "accuracy": 1
+  },
+  {
+    "fixture": "will_fix",
+    "total": 4,
+    "confusion": {
+      "will-fix": {
+        "will-fix": 4
+      }
+    },
+    "fp_precision": 1,
+    "accuracy": 1
+  },
+  {
+    "fixture": "wontfix_business",
+    "total": 4,
+    "confusion": {
+      "wontfix-business": {
+        "wontfix-business": 4
+      }
+    },
+    "fp_precision": 1,
+    "accuracy": 1
+  },
+  {
+    "fixture": "injection",
+    "total": 3,
+    "confusion": {
+      "question": {
+        "question": 3
+      }
+    },
+    "fp_precision": 1,
+    "accuracy": 1
+  }
+]

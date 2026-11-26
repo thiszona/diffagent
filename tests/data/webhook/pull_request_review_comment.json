@@ -1,0 +1,43 @@
+{
+  "action": "created",
+  "comment": {
+    "url": "https://api.github.com/repos/acme/shop/pulls/comments/2612345678",
+    "id": 2612345678,
+    "pull_request_review_id": 2712345678,
+    "in_reply_to_id": 2612345600,
+    "path": "internal/payment/callback.go",
+    "commit_id": "4b2d6f8a0c1e3a5b7d9f1e3c5a7b9d1f3e5a7c9b",
+    "diff_hunk": "@@ -40,6 +40,9 @@ func (h *Handler) Callback(ctx context.Context, req Request) error {\n+\tif err := h.retry(ctx, req); err != nil {",
+    "user": { "login": "bob", "id": 1002, "type": "User" },
+    "body": "This is intended: the retry is idempotent because the callback carries its own key.",
+    "author_association": "MEMBER"
+  },
+  "pull_request": {
+    "url": "https://api.github.com/repos/acme/shop/pulls/9",
+    "id": 2412345690,
+    "number": 9,
+    "state": "open",
+    "title": "PROJ-140 Retry the payment callback",
+    "user": { "login": "carol", "id": 1003, "type": "User" },
+    "draft": false,
+    "head": {
+      "ref": "feature/PROJ-140-callback-retry",
+      "sha": "4b2d6f8a0c1e3a5b7d9f1e3c5a7b9d1f3e5a7c9b"
+    },
+    "base": {
+      "ref": "main",
+      "sha": "9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d"
+    }
+  },
+  "repository": {
+    "id": 812345678,
+    "name": "shop",
+    "full_name": "acme/shop",
+    "private": true,
+    "owner": { "login": "acme", "id": 2001, "type": "Organization" },
+    "default_branch": "main"
+  },
+  "organization": { "login": "acme", "id": 2001 },
+  "sender": { "login": "bob", "id": 1002, "type": "User" },
+  "installation": { "id": 61234567 }
+}

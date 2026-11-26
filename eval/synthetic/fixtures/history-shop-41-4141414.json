@@ -1,0 +1,10 @@
+{
+  "name": "history-shop-41-4141414",
+  "files": [
+    {
+      "Path": "internal/cart/total.go",
+      "Status": "added",
+      "Patch": "@@ -0,0 +1,41 @@\n+package cart\n+\n+import (\n+\t\"database/sql\"\n+\t\"fmt\"\n+)\n+\n+// Line is one cart line, priced in cents.\n+type Line struct {\n+\tPriceCents int64\n+\tQty        int64\n+}\n+\n+// Total sums the lines and takes the discount off.\n+func Total(lines []Line, discountCents int64) int64 {\n+\tvar sum int64\n+\tfor _, l := range lines {\n+\t\tsum += l.PriceCents * l.Qty\n+\t}\n+\treturn sum - discountCents\n+}\n+\n+// AveragePrice is the mean line price in whole units.\n+func AveragePrice(lines []Line) float64 {\n+\tvar sum int64\n+\tfor _, l := range lines {\n+\t\tsum += l.PriceCents\n+\t}\n+\treturn float64(sum/int64(len(lines))) / 100\n+}\n+\n+// sortable is every column a cart listing may be sorted by.\n+var sortable = map[string]bool{\"id\": true, \"total\": true, \"created_at\": true}\n+\n+// Sorted lists carts ordered by a column the caller picks.\n+func Sorted(db *sql.DB, column string) (*sql.Rows, error) {\n+\tif !sortable[column] {\n+\t\treturn nil, fmt.Errorf(\"cart: cannot sort by %q\", column)\n+\t}\n+\treturn db.Query(\"SELECT id, total FROM carts ORDER BY \" + column)\n+}"
+    }
+  ]
+}

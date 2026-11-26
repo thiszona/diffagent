@@ -1,0 +1,41 @@
+{
+  "planted-01-nil-map-write": {
+    "repo": "acme/shop",
+    "base_sha": "1111111111111111111111111111111111111111",
+    "kind": "planted",
+    "labels": [
+      {
+        "path": "internal/stock/reserve.go",
+        "start_line": 21,
+        "end_line": 26,
+        "severity": "critical",
+        "title": "Make held before writing to it",
+        "label": "planted",
+        "note": "held is declared with var and never made, so the write on line 26 panics on the first SKU."
+      }
+    ]
+  },
+  "planted-02-swapped-args-caller": {
+    "repo": "acme/shop",
+    "base_sha": "2222222222222222222222222222222222222222",
+    "kind": "planted",
+    "labels": [
+      {
+        "path": "internal/order/place.go",
+        "start_line": 24,
+        "end_line": 24,
+        "severity": "major",
+        "title": "Pass the currencies to Convert in its (to, from) order",
+        "label": "planted",
+        "scope": "cross-file",
+        "evidence": [
+          {
+            "path": "internal/pricing/convert.go",
+            "line": 9
+          }
+        ],
+        "note": "Convert takes (amount, to, from); the call passes the order's currency as to and IDR as from, so the total is converted the wrong way. Only convert.go shows the order."
+      }
+    ]
+  }
+}

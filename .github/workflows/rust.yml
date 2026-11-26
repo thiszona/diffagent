@@ -1,0 +1,74 @@
+name: rust
+run-name: rust diffagent [${{ github.ref_name }}]
+
+# The unit gate. The toolchain comes from rust-toolchain.toml;
+# `rustup toolchain install` with no argument installs it.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: fmt, clippy, test
+    # The embedded Postgres the store tests boot links libxml2.so.2, which ubuntu-26.04
+    # no longer ships. shortcut: pinned until its binaries stop needing it.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - run: rustup toolchain install
+      # The workspace tests run `go mod download` against a module proxy on disk.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: goctx/go.mod
+          cache: false
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets --locked -- -D warnings
+      # The store's contract tests boot an embedded Postgres, whose binaries are found
+      # through one GitHub API call; the token lifts the per-IP anonymous rate limit.
+      - run: cargo test --locked
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  # diffagent-goctx, the Go context subprocess, in its own module.
+  goctx:
+    name: goctx gofmt, vet, test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: goctx
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: goctx/go.mod
+          cache-dependency-path: goctx/go.sum
+      - name: gofmt
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "gofmt needed on:"; echo "$unformatted"; exit 1
+          fi
+      - run: go vet ./...
+      - run: go test ./...
+
+  # Known-vulnerable or unmaintained crates, disallowed licenses, and crates from
+  # anywhere but crates.io fail the build (deny.toml).
+  deny:
+    name: cargo-deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1

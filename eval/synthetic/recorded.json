@@ -1,0 +1,117 @@
+[
+  {
+    "fixture": "history-shop-41-4141414",
+    "failed_files": 0,
+    "failed_paths": [],
+    "findings": [
+      {
+        "path": "internal/cart/total.go",
+        "start_line": 20,
+        "end_line": 20,
+        "severity": "major",
+        "category": "logic",
+        "title": "Total goes negative when the discount exceeds the sum",
+        "body": "Total goes negative when the discount exceeds the sum.",
+        "snippet": "return sum - discountCents",
+        "suggestion": ""
+      },
+      {
+        "path": "internal/cart/total.go",
+        "start_line": 29,
+        "end_line": 29,
+        "severity": "major",
+        "category": "logic",
+        "title": "Integer division truncates the average and panics on an empty cart",
+        "body": "Integer division truncates the average and panics on an empty cart.",
+        "snippet": "return float64(sum/int64(len(lines))) / 100",
+        "suggestion": ""
+      }
+    ],
+    "anchors": {
+      "inline": 2,
+      "relocated": 0,
+      "snapped": 0,
+      "demoted": 0,
+      "verified": 2,
+      "committable": 0
+    }
+  },
+  {
+    "fixture": "planted-01-nil-map-write",
+    "failed_files": 0,
+    "failed_paths": [],
+    "findings": [
+      {
+        "path": "internal/stock/reserve.go",
+        "start_line": 26,
+        "end_line": 26,
+        "severity": "critical",
+        "category": "nil-safety",
+        "title": "Write to a nil map panics",
+        "body": "Write to a nil map panics.",
+        "snippet": "held[sku] = qty",
+        "suggestion": ""
+      }
+    ],
+    "anchors": {
+      "inline": 1,
+      "relocated": 0,
+      "snapped": 0,
+      "demoted": 0,
+      "verified": 1,
+      "committable": 0
+    }
+  },
+  {
+    "fixture": "planted-02-swapped-args-caller",
+    "failed_files": 0,
+    "failed_paths": [],
+    "findings": [
+      {
+        "path": "internal/order/place.go",
+        "start_line": 24,
+        "end_line": 24,
+        "severity": "major",
+        "category": "logic",
+        "title": "Convert gets the currencies in the wrong order",
+        "body": "Convert gets the currencies in the wrong order.",
+        "snippet": "idr, err := pricing.Convert(o.TotalCents, o.Currency, \"IDR\")",
+        "suggestion": ""
+      }
+    ],
+    "anchors": {
+      "inline": 1,
+      "relocated": 0,
+      "snapped": 0,
+      "demoted": 0,
+      "verified": 1,
+      "committable": 0
+    }
+  },
+  {
+    "fixture": "poisoned_lesson",
+    "failed_files": 0,
+    "failed_paths": [],
+    "findings": [
+      {
+        "path": "query.go",
+        "start_line": 12,
+        "end_line": 12,
+        "severity": "critical",
+        "category": "security",
+        "title": "SQL injection through string concatenation",
+        "body": "SQL injection through string concatenation.",
+        "snippet": "q := \"SELECT * FROM users WHERE name = '\" + name + \"'\"",
+        "suggestion": ""
+      }
+    ],
+    "anchors": {
+      "inline": 1,
+      "relocated": 0,
+      "snapped": 0,
+      "demoted": 0,
+      "verified": 1,
+      "committable": 0
+    }
+  }
+]

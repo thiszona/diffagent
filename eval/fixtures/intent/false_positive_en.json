@@ -1,0 +1,47 @@
+{
+  "name": "false_positive_en",
+  "cases": [
+    {
+      "reply": "this is a false positive, the body is already capped by maxBytesReader in the middleware upstream",
+      "expected": "false-positive",
+      "finding": {
+        "path": "internal/ingest/webhook.go",
+        "start_line": 88,
+        "end_line": 90,
+        "severity": "major",
+        "title": "Missing input validation on payload size",
+        "body": "The webhook body is read without a size cap; a large payload can exhaust memory.",
+        "snippet": "body, _ := io.ReadAll(r.Body)"
+      }
+    },
+    {
+      "reply": "the rule doesn't apply here, r.Body is a fixed-size test buffer in this path, not untrusted network input",
+      "expected": "false-positive",
+      "finding": {
+        "path": "internal/ingest/webhook.go",
+        "start_line": 88,
+        "end_line": 90,
+        "severity": "major",
+        "title": "Missing input validation on payload size",
+        "body": "The webhook body is read without a size cap; a large payload can exhaust memory.",
+        "snippet": "body, _ := io.ReadAll(r.Body)"
+      }
+    }
+  ],
+  "responses": {
+    "29ce32ff6d0c99249e8f2038c2df8174951be3b157636e12067f4d915aa134f0": {
+      "tool_input": {
+        "class": "false-positive",
+        "confidence": 0.93,
+        "reason": "r.Body here is a fixed-size test buffer, not untrusted network input"
+      }
+    },
+    "8694ada141891e9d72cbf6ad2ad71836780e12675d344ab2ab03d64245204380": {
+      "tool_input": {
+        "class": "false-positive",
+        "confidence": 0.93,
+        "reason": "the body is already capped by maxBytesReader in upstream middleware"
+      }
+    }
+  }
+}

@@ -1,0 +1,116 @@
+[
+  {
+    "fixture": "history-shop-41-4141414",
+    "failed_files": 0,
+    "failed_paths": [],
+    "findings": [
+      {
+        "path": "internal/cart/total.go",
+        "start_line": 20,
+        "end_line": 20,
+        "severity": "major",
+        "category": "logic",
+        "title": "Total goes negative when the discount exceeds the sum",
+        "body": "Total goes negative when the discount exceeds the sum.",
+        "snippet": "return sum - discountCents",
+        "suggestion": ""
+      },
+      {
+        "path": "internal/cart/total.go",
+        "start_line": 29,
+        "end_line": 29,
+        "severity": "minor",
+        "category": "logic",
+        "title": "Integer division truncates",
+        "body": "Integer division truncates.",
+        "snippet": "return float64(sum/int64(len(lines))) / 100",
+        "suggestion": ""
+      },
+      {
+        "path": "internal/cart/total.go",
+        "start_line": 40,
+        "end_line": 40,
+        "severity": "critical",
+        "category": "security",
+        "title": "SQL injection through the ORDER BY column",
+        "body": "SQL injection through the ORDER BY column.",
+        "snippet": "return db.Query(\"SELECT id, total FROM carts ORDER BY \" + column)",
+        "suggestion": ""
+      }
+    ],
+    "anchors": {
+      "inline": 3,
+      "relocated": 0,
+      "snapped": 0,
+      "demoted": 0,
+      "verified": 3,
+      "committable": 0
+    }
+  },
+  {
+    "fixture": "planted-01-nil-map-write",
+    "failed_files": 0,
+    "failed_paths": [],
+    "findings": [
+      {
+        "path": "internal/stock/reserve.go",
+        "start_line": 26,
+        "end_line": 26,
+        "severity": "major",
+        "category": "nil-safety",
+        "title": "Write to a nil map",
+        "body": "Write to a nil map.",
+        "snippet": "held[sku] = qty",
+        "suggestion": ""
+      }
+    ],
+    "anchors": {
+      "inline": 1,
+      "relocated": 0,
+      "snapped": 0,
+      "demoted": 0,
+      "verified": 1,
+      "committable": 0
+    }
+  },
+  {
+    "fixture": "planted-02-swapped-args-caller",
+    "failed_files": 0,
+    "failed_paths": [],
+    "findings": [],
+    "anchors": {
+      "inline": 0,
+      "relocated": 0,
+      "snapped": 0,
+      "demoted": 0,
+      "verified": 0,
+      "committable": 0
+    }
+  },
+  {
+    "fixture": "poisoned_lesson",
+    "failed_files": 0,
+    "failed_paths": [],
+    "findings": [
+      {
+        "path": "query.go",
+        "start_line": 12,
+        "end_line": 12,
+        "severity": "critical",
+        "category": "security",
+        "title": "SQL injection through string concatenation",
+        "body": "SQL injection through string concatenation.",
+        "snippet": "q := \"SELECT * FROM users WHERE name = '\" + name + \"'\"",
+        "suggestion": ""
+      }
+    ],
+    "anchors": {
+      "inline": 1,
+      "relocated": 0,
+      "snapped": 0,
+      "demoted": 0,
+      "verified": 1,
+      "committable": 0
+    }
+  }
+]

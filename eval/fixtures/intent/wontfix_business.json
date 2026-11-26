@@ -1,0 +1,87 @@
+{
+  "name": "wontfix_business",
+  "cases": [
+    {
+      "reply": "kita memang sengaja gak pakai index di tabel ini, keputusan tim karena write-heavy dan baris-nya sedikit",
+      "expected": "wontfix-business",
+      "finding": {
+        "path": "internal/state/store.go",
+        "start_line": 211,
+        "end_line": 211,
+        "severity": "minor",
+        "title": "Query may miss an index",
+        "body": "Filtering by `repo` without an index can table-scan as the findings table grows.",
+        "snippet": "WHERE repo = $1 AND fingerprint = $2"
+      }
+    },
+    {
+      "reply": "this is our convention, we keep these tables index-free intentionally and accept the scan",
+      "expected": "wontfix-business",
+      "finding": {
+        "path": "internal/state/store.go",
+        "start_line": 211,
+        "end_line": 211,
+        "severity": "minor",
+        "title": "Query may miss an index",
+        "body": "Filtering by `repo` without an index can table-scan as the findings table grows.",
+        "snippet": "WHERE repo = $1 AND fingerprint = $2"
+      }
+    },
+    {
+      "reply": "intentional business decision, leave it — biar konsisten sama tabel lain yang juga gak di-index",
+      "expected": "wontfix-business",
+      "finding": {
+        "path": "internal/state/store.go",
+        "start_line": 211,
+        "end_line": 211,
+        "severity": "minor",
+        "title": "Query may miss an index",
+        "body": "Filtering by `repo` without an index can table-scan as the findings table grows.",
+        "snippet": "WHERE repo = $1 AND fingerprint = $2"
+      }
+    },
+    {
+      "reply": "ini keputusan tim, biarkan dulu, nanti di-handle pas migrasi besar",
+      "expected": "wontfix-business",
+      "finding": {
+        "path": "internal/state/store.go",
+        "start_line": 211,
+        "end_line": 211,
+        "severity": "minor",
+        "title": "Query may miss an index",
+        "body": "Filtering by `repo` without an index can table-scan as the findings table grows.",
+        "snippet": "WHERE repo = $1 AND fingerprint = $2"
+      }
+    }
+  ],
+  "responses": {
+    "09cedd87faa4feced9522890641594ddc99a3e352127c5263731cee216f01790": {
+      "tool_input": {
+        "class": "wontfix-business",
+        "confidence": 0.93,
+        "reason": "team decision: no index here because the table is write-heavy with few rows"
+      }
+    },
+    "17436365c860edeb54ea93e5c5c07a11c1c9f7f093c3ae8ef162214d9acf9308": {
+      "tool_input": {
+        "class": "wontfix-business",
+        "confidence": 0.93,
+        "reason": "kept index-free intentionally for consistency with the other un-indexed tables"
+      }
+    },
+    "79a5f76d0462008c6aae738cc863ca257f85b44976e430c45df0c1dcac44a895": {
+      "tool_input": {
+        "class": "wontfix-business",
+        "confidence": 0.93,
+        "reason": "team convention to keep these tables index-free and accept the scan"
+      }
+    },
+    "b38e118a6eb24dc4757c098a1ff78c63027ee9233169b35812a3679f36ae86cb": {
+      "tool_input": {
+        "class": "wontfix-business",
+        "confidence": 0.93,
+        "reason": "team decision to leave it for now and handle it in the larger migration"
+      }
+    }
+  }
+}

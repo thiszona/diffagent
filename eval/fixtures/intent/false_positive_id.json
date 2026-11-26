@@ -1,0 +1,47 @@
+{
+  "name": "false_positive_id",
+  "cases": [
+    {
+      "reply": "ini false positive, job.Result selalu di-set sebelum baris ini di handleReady, jadi gak mungkin nil di sini",
+      "expected": "false-positive",
+      "finding": {
+        "path": "internal/worker/processor.go",
+        "start_line": 142,
+        "end_line": 142,
+        "severity": "major",
+        "title": "Possible nil dereference on job.Result",
+        "body": "`job.Result` may be nil when the upstream call failed; dereferencing it here can panic.",
+        "snippet": "out := job.Result.Findings"
+      }
+    },
+    {
+      "reply": "salah deteksi, ini value type bukan pointer, gak bisa nil",
+      "expected": "false-positive",
+      "finding": {
+        "path": "internal/worker/processor.go",
+        "start_line": 142,
+        "end_line": 142,
+        "severity": "major",
+        "title": "Possible nil dereference on job.Result",
+        "body": "`job.Result` may be nil when the upstream call failed; dereferencing it here can panic.",
+        "snippet": "out := job.Result.Findings"
+      }
+    }
+  ],
+  "responses": {
+    "52a019ae4850a0a270c0da287c546109a9bcdcbe1757334171a2db2be83235be": {
+      "tool_input": {
+        "class": "false-positive",
+        "confidence": 0.93,
+        "reason": "the field is a value type, not a pointer, so it cannot be nil"
+      }
+    },
+    "90926411f7de0f4418de477bc48ec5d1f4d7e0ce024952216a1d2f08cdeb48e0": {
+      "tool_input": {
+        "class": "false-positive",
+        "confidence": 0.93,
+        "reason": "job.Result is always set in handleReady before this line, so it cannot be nil here"
+      }
+    }
+  }
+}

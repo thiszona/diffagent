@@ -1,0 +1,22 @@
+[
+  {
+    "repo": "acme/shop",
+    "pr_number": 41,
+    "first_sha": "4141414141414141414141414141414141414141",
+    "path": "internal/cart/total.go",
+    "severity": "major",
+    "title": "Total goes negative when the discount exceeds the sum",
+    "dismissed": true,
+    "why": "Not a bug: checkout caps the discount at the cart total before it calls Total, so this never goes negative."
+  },
+  {
+    "repo": "acme/shop",
+    "pr_number": 41,
+    "first_sha": "4141414141414141414141414141414141414141",
+    "path": "internal/cart/total.go",
+    "severity": "critical",
+    "title": "SQL injection through the ORDER BY column",
+    "dismissed": true,
+    "why": "Ini bukan SQL injection, `column` sudah dicek ke whitelist `sortable` di atas sebelum query dijalankan."
+  }
+]

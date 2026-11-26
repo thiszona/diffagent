@@ -1,0 +1,37 @@
+{
+  "action": "opened",
+  "number": 7,
+  "pull_request": {
+    "url": "https://api.github.com/repos/acme/shop/pulls/7",
+    "id": 2412345678,
+    "number": 7,
+    "state": "open",
+    "locked": false,
+    "title": "PROJ-123 Validate the order window",
+    "body": "Rejects orders whose window ends before it starts.",
+    "user": { "login": "alice", "id": 1001, "type": "User" },
+    "draft": false,
+    "head": {
+      "label": "acme:feature/PROJ-123-order-window",
+      "ref": "feature/PROJ-123-order-window",
+      "sha": "1f0c3a5d9e7b2c4a6f8e0d1b3c5a7e9f2d4b6c8a"
+    },
+    "base": {
+      "label": "acme:main",
+      "ref": "main",
+      "sha": "9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d"
+    },
+    "author_association": "MEMBER"
+  },
+  "repository": {
+    "id": 812345678,
+    "name": "shop",
+    "full_name": "acme/shop",
+    "private": true,
+    "owner": { "login": "acme", "id": 2001, "type": "Organization" },
+    "default_branch": "main"
+  },
+  "organization": { "login": "acme", "id": 2001 },
+  "sender": { "login": "alice", "id": 1001, "type": "User" },
+  "installation": { "id": 61234567 }
+}

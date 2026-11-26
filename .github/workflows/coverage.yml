@@ -1,0 +1,46 @@
+name: coverage
+run-name: coverage diffagent [${{ github.ref_name }}]
+
+# Line coverage of the Rust tests on main, for the README badge. It is its own
+# workflow so the build badge reflects only the unit gate in rust.yml. Only main's
+# merged code runs here, since the job can mint an OIDC token.
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    name: llvm-cov
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write # the Qlty upload authenticates with OIDC, so no token secret
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - run: rustup toolchain install && rustup component add llvm-tools
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: goctx/go.mod
+          cache: false
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
+        with:
+          tool: cargo-llvm-cov
+      - run: cargo llvm-cov --locked --lcov --output-path lcov.info
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      # A private repo's code never reaches Qlty.
+      - if: ${{ !github.event.repository.private }}
+        uses: qltysh/qlty-action/coverage@ebcd284bf32e36a030afe15f1e136c7be08b9506 # v2.5.0
+        with:
+          oidc: true
+          files: lcov.info
+          format: lcov
+          strip-prefix: ${{ github.workspace }}/

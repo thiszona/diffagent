@@ -1,0 +1,1 @@
+{ "extends": "./d6.json", "compilerOptions": { "paths": { "#five/*": ["./five/*"] } } }

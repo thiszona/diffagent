@@ -1,0 +1,10 @@
+{
+  "name": "planted-02-swapped-args-caller",
+  "files": [
+    {
+      "Path": "internal/order/place.go",
+      "Status": "modified",
+      "Patch": "@@ -2,6 +2,9 @@\n \n import (\n \t\"context\"\n+\t\"fmt\"\n+\n+\t\"example.com/acme/shop/internal/pricing\"\n )\n \n // Order is a placed order.\n@@ -16,7 +19,12 @@\n \tSave(ctx context.Context, o Order) error\n }\n \n-// Place saves an order.\n+// Place saves an order with its total in rupiah, the currency the ledger keeps.\n func Place(ctx context.Context, s Store, o Order) error {\n+\tidr, err := pricing.Convert(o.TotalCents, o.Currency, \"IDR\")\n+\tif err != nil {\n+\t\treturn fmt.Errorf(\"order %s: %w\", o.ID, err)\n+\t}\n+\to.TotalCents, o.Currency = idr, \"IDR\"\n \treturn s.Save(ctx, o)\n }"
+    }
+  ]
+}

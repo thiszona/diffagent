@@ -1,0 +1,31 @@
+{
+  "repo": "acme/shop",
+  "sha": "1111111111111111111111111111111111111111",
+  "files": [
+    [
+      "internal/stock/reserve.go",
+      "modified"
+    ]
+  ],
+  "conventions": "",
+  "packs": {
+    "internal/stock/reserve.go": {
+      "snippets": [
+        {
+          "kind": "definition",
+          "symbol": "Reserver",
+          "path": "internal/stock/reserve.go",
+          "start_line": 6,
+          "end_line": 9,
+          "text": "type Reserver struct {\n\tstock map[string]int\n\theld  map[string]map[string]int\n}"
+        }
+      ],
+      "related": [],
+      "error": null
+    }
+  },
+  "ts_imports": [
+    0,
+    0
+  ]
+}

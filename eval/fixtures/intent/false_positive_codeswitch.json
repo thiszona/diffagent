@@ -1,0 +1,47 @@
+{
+  "name": "false_positive_codeswitch",
+  "cases": [
+    {
+      "reply": "this is intended lah, job.Result memang di-guard di caller-nya, jadi bukan bug",
+      "expected": "false-positive",
+      "finding": {
+        "path": "internal/worker/processor.go",
+        "start_line": 142,
+        "end_line": 142,
+        "severity": "major",
+        "title": "Possible nil dereference on job.Result",
+        "body": "`job.Result` may be nil when the upstream call failed; dereferencing it here can panic.",
+        "snippet": "out := job.Result.Findings"
+      }
+    },
+    {
+      "reply": "eh ini bukan bug, the linter would've caught it kalau beneran nil, jadi false positive",
+      "expected": "false-positive",
+      "finding": {
+        "path": "internal/worker/processor.go",
+        "start_line": 142,
+        "end_line": 142,
+        "severity": "major",
+        "title": "Possible nil dereference on job.Result",
+        "body": "`job.Result` may be nil when the upstream call failed; dereferencing it here can panic.",
+        "snippet": "out := job.Result.Findings"
+      }
+    }
+  ],
+  "responses": {
+    "1590aafcc0df7b51e27160927e26ae40790afefcac898bfccb5000705cbf9cee": {
+      "tool_input": {
+        "class": "false-positive",
+        "confidence": 0.93,
+        "reason": "job.Result is guarded in the caller, so this is intended and not a bug"
+      }
+    },
+    "5eec942b3f5d1dc08abdbcec4584dc45bdfc9b861aa17c8f4daaf2215f5673a5": {
+      "tool_input": {
+        "class": "false-positive",
+        "confidence": 0.93,
+        "reason": "the linter would catch a real nil here, so this is a false positive"
+      }
+    }
+  }
+}

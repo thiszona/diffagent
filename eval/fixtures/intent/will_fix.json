@@ -1,0 +1,87 @@
+{
+  "name": "will_fix",
+  "cases": [
+    {
+      "reply": "oke nanti gw fix, betul ini bisa nil kalau upstream-nya gagal",
+      "expected": "will-fix",
+      "finding": {
+        "path": "internal/worker/processor.go",
+        "start_line": 142,
+        "end_line": 142,
+        "severity": "major",
+        "title": "Possible nil dereference on job.Result",
+        "body": "`job.Result` may be nil when the upstream call failed; dereferencing it here can panic.",
+        "snippet": "out := job.Result.Findings"
+      }
+    },
+    {
+      "reply": "good catch, will fix — adding a nil guard now",
+      "expected": "will-fix",
+      "finding": {
+        "path": "internal/worker/processor.go",
+        "start_line": 142,
+        "end_line": 142,
+        "severity": "major",
+        "title": "Possible nil dereference on job.Result",
+        "body": "`job.Result` may be nil when the upstream call failed; dereferencing it here can panic.",
+        "snippet": "out := job.Result.Findings"
+      }
+    },
+    {
+      "reply": "siap, betul, gw tambahin nil check abis ini",
+      "expected": "will-fix",
+      "finding": {
+        "path": "internal/worker/processor.go",
+        "start_line": 142,
+        "end_line": 142,
+        "severity": "major",
+        "title": "Possible nil dereference on job.Result",
+        "body": "`job.Result` may be nil when the upstream call failed; dereferencing it here can panic.",
+        "snippet": "out := job.Result.Findings"
+      }
+    },
+    {
+      "reply": "agreed, fixing now lah, makasih udah nangkep",
+      "expected": "will-fix",
+      "finding": {
+        "path": "internal/worker/processor.go",
+        "start_line": 142,
+        "end_line": 142,
+        "severity": "major",
+        "title": "Possible nil dereference on job.Result",
+        "body": "`job.Result` may be nil when the upstream call failed; dereferencing it here can panic.",
+        "snippet": "out := job.Result.Findings"
+      }
+    }
+  ],
+  "responses": {
+    "193f89815ef581901a4a4ffd2ca01796651d60fc313b49517558627c575aee8a": {
+      "tool_input": {
+        "class": "will-fix",
+        "confidence": 0.72,
+        "reason": ""
+      }
+    },
+    "3772bd9722730d3b535575d83e17d67e212809b20b29f4c40c86857eeb848b6b": {
+      "tool_input": {
+        "class": "will-fix",
+        "confidence": 0.72,
+        "reason": ""
+      }
+    },
+    "37759fd0dc06072d7f2df7c99dfa286fff6a691195a9cfdf50eafa085b403c4d": {
+      "tool_input": {
+        "class": "will-fix",
+        "confidence": 0.72,
+        "reason": ""
+      }
+    },
+    "c05f850cada680f996951d84efc4195c22ab2a41b31440a72f996a47148037db": {
+      "tool_input": {
+        "class": "will-fix",
+        "confidence": 0.72,
+        "reason": ""
+      }
+    }
+  }
+}

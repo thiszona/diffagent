@@ -1,0 +1,10 @@
+{
+  "name": "planted-01-nil-map-write",
+  "files": [
+    {
+      "Path": "internal/stock/reserve.go",
+      "Status": "modified",
+      "Patch": "@@ -18,6 +18,15 @@ func (r *Reserver) Reserve(order string,\n \tif len(skus) == 0 {\n \t\treturn fmt.Errorf(\"stock: order %s reserves nothing\", order)\n \t}\n+\tvar held map[string]int\n+\tfor sku, qty := range skus {\n+\t\tif r.stock[sku] < qty {\n+\t\t\treturn fmt.Errorf(\"stock: %s is short by %d\", sku, qty-r.stock[sku])\n+\t\t}\n+\t\theld[sku] = qty\n+\t\tr.stock[sku] -= qty\n+\t}\n+\tr.held[order] = held\n \treturn nil\n }\n "
+    }
+  ]
+}

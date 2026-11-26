@@ -1,0 +1,3 @@
+# sqlx::migrate! runs each migration inside its own transaction, so squawk should judge
+# them that way (an index on a table created in the same migration blocks no one).
+assume_in_transaction = true

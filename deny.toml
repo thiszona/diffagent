@@ -1,0 +1,26 @@
+# cargo-deny policy (CI job `deny` in .github/workflows/rust.yml). Only settings
+# that differ from cargo-deny's defaults are listed; advisories use the defaults
+# (known vulnerabilities and unmaintained crates fail the build), less the ignores.
+
+[advisories]
+ignore = [
+    # Drop once postgresql_embedded no longer pulls pin-utils.
+    { id = "RUSTSEC-2026-0441", reason = "pin-utils unmaintained; dev-dependency only" },
+]
+
+[licenses]
+# Permissive licenses only, added deliberately as each crate that needs one arrives.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Unicode-3.0",         # unicode-ident (serde's derive macros)
+    "Zlib",                # foldhash (hashbrown, under regex and tree-sitter)
+    "ISC",                 # ring, rustls-webpki, untrusted (rustls, under sqlx's TLS)
+    "BSD-3-Clause",        # subtle (under rustls)
+    "CDLA-Permissive-2.0", # webpki-roots (sqlx's tls-rustls root certificates)
+]
+
+[sources]
+# Crates come from crates.io only.
+unknown-registry = "deny"
+unknown-git = "deny"

@@ -1,0 +1,87 @@
+{
+  "name": "question",
+  "cases": [
+    {
+      "reply": "kenapa ini masalah? bukannya io.ReadAll udah aman?",
+      "expected": "question",
+      "finding": {
+        "path": "internal/ingest/webhook.go",
+        "start_line": 88,
+        "end_line": 90,
+        "severity": "major",
+        "title": "Missing input validation on payload size",
+        "body": "The webhook body is read without a size cap; a large payload can exhaust memory.",
+        "snippet": "body, _ := io.ReadAll(r.Body)"
+      }
+    },
+    {
+      "reply": "why is this flagged? can you explain the memory-exhaustion path?",
+      "expected": "question",
+      "finding": {
+        "path": "internal/ingest/webhook.go",
+        "start_line": 88,
+        "end_line": 90,
+        "severity": "major",
+        "title": "Missing input validation on payload size",
+        "body": "The webhook body is read without a size cap; a large payload can exhaust memory.",
+        "snippet": "body, _ := io.ReadAll(r.Body)"
+      }
+    },
+    {
+      "reply": "maksudnya gimana, you mean we should wrap it with MaxBytesReader?",
+      "expected": "question",
+      "finding": {
+        "path": "internal/ingest/webhook.go",
+        "start_line": 88,
+        "end_line": 90,
+        "severity": "major",
+        "title": "Missing input validation on payload size",
+        "body": "The webhook body is read without a size cap; a large payload can exhaust memory.",
+        "snippet": "body, _ := io.ReadAll(r.Body)"
+      }
+    },
+    {
+      "reply": "hmm gak yakin sih, kayanya ini gak relevan deh tapi gatau",
+      "expected": "question",
+      "finding": {
+        "path": "internal/ingest/webhook.go",
+        "start_line": 88,
+        "end_line": 90,
+        "severity": "major",
+        "title": "Missing input validation on payload size",
+        "body": "The webhook body is read without a size cap; a large payload can exhaust memory.",
+        "snippet": "body, _ := io.ReadAll(r.Body)"
+      }
+    }
+  ],
+  "responses": {
+    "0572d0140bed03333dab87d47c1c86e130d436525b1143ad4a9d6753e1d8ac0b": {
+      "tool_input": {
+        "class": "question",
+        "confidence": 0.72,
+        "reason": ""
+      }
+    },
+    "22cd220cd5102332fa7a9cf521fa5ae581f65bad7382237707f6610cd8049b07": {
+      "tool_input": {
+        "class": "false-positive",
+        "confidence": 0.4,
+        "reason": ""
+      }
+    },
+    "3a91aee92bd0dc3500fd76f188e87a2b1ddb743307638560a3695f42e8a919ac": {
+      "tool_input": {
+        "class": "question",
+        "confidence": 0.72,
+        "reason": ""
+      }
+    },
+    "e945f08f50dd5ad03717692408682861ce6073c8028f595a5d0cfd6f15c9866a": {
+      "tool_input": {
+        "class": "question",
+        "confidence": 0.72,
+        "reason": ""
+      }
+    }
+  }
+}

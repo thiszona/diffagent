@@ -1,0 +1,14 @@
+*.env
+.env
+
+# Secrets — never commit. GitHub App private keys, any PEM/key material.
+*.pem
+*.private-key.pem
+*.key
+
+# Rust build output.
+/target/
+/goctx/goctx
+
+# diffagent-eval run output: tapes and outputs, recorded locally.
+/eval/out/

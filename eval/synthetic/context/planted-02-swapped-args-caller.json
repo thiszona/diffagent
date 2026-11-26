@@ -1,0 +1,31 @@
+{
+  "repo": "acme/shop",
+  "sha": "2222222222222222222222222222222222222222",
+  "files": [
+    [
+      "internal/order/place.go",
+      "modified"
+    ]
+  ],
+  "conventions": "--- AGENTS.md ---\nMoney is int64 cents of the currency next to it. The ledger keeps rupiah (IDR).",
+  "packs": {
+    "internal/order/place.go": {
+      "snippets": [
+        {
+          "kind": "definition",
+          "symbol": "Convert",
+          "path": "internal/pricing/convert.go",
+          "start_line": 9,
+          "end_line": 15,
+          "text": "func Convert(amountCents int64, to, from string) (int64, error) {\n\trate, ok := rates[from+\"->\"+to]\n\tif !ok {\n\t\treturn 0, fmt.Errorf(\"pricing: no rate from %s to %s\", from, to)\n\t}\n\treturn int64(float64(amountCents) * rate), nil\n}"
+        }
+      ],
+      "related": [],
+      "error": null
+    }
+  },
+  "ts_imports": [
+    0,
+    0
+  ]
+}
