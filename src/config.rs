@@ -115,6 +115,11 @@ pub enum ConfigError {
     Missing { vars: Vec<&'static str> },
     #[error("{var}: entry {entry} is not a CIDR range (a.b.c.d/n or x:y::/n)")]
     NotACidr { var: &'static str, entry: usize },
+    #[error(
+        "BOT_NAME: expected 1 to 39 letters, digits, '.', '_' or '-', starting with a letter \
+         or digit"
+    )]
+    BadBotName,
 }
 
 /// All runtime settings. Debug is safe to log: every secret is a [`Secret`].
@@ -175,9 +180,13 @@ pub struct Config {
     pub enable_feedback: bool,
     /// One-click suggestion blocks; off renders advisory diffs only.
     pub committable_suggestions: bool,
-    /// Posts the `diffagent` check run (the merge gate). Off until the App has
+    /// Posts the merge gate's check run, under the bot's name. Off until the App has
     /// Checks: write, since every post would fail.
     pub merge_gate: bool,
+    /// `BOT_NAME`: the bot's name in place of the App's slug, for the merge gate's
+    /// check run, which a ruleset requires by name, and the status comment's heading.
+    /// Never the `@` handle, which stays the slug. `None` when unset.
+    pub bot_name: Option<String>,
     pub learn: learn::Config,
 }
 
@@ -189,8 +198,9 @@ impl Config {
 
     /// Reads settings through `lookup`. An empty value counts as unset, and an
     /// unparseable number or duration, or a NaN or negative price, falls back to its
-    /// default with a warning naming the variable. Tracing is set up before
-    /// this runs, so the warning is logged here.
+    /// default with a warning naming the variable, except `BOT_NAME`, which must be
+    /// valid when set. Tracing is set up before this runs, so the warning is logged
+    /// here.
     pub fn from_lookup(lookup: impl Fn(&str) -> Option<String>) -> Result<Self, ConfigError> {
         let env = Env(&lookup);
         let per_file_timeout = env.duration("PER_FILE_TIMEOUT", Duration::from_secs(4 * 60));
@@ -244,6 +254,7 @@ impl Config {
             enable_feedback: env.get("ENABLE_FEEDBACK").as_deref() != Some("false"),
             committable_suggestions: env.flag("COMMITTABLE_SUGGESTIONS"),
             merge_gate: env.flag("ENABLE_MERGE_GATE"),
+            bot_name: bot_name(lookup("BOT_NAME"))?,
             learn: learn_config(&env),
         })
     }
@@ -470,6 +481,28 @@ fn cidrs(env: &Env, var: &'static str) -> Result<Vec<IpNet>, ConfigError> {
     entries.iter().enumerate().map(parse).collect()
 }
 
+/// `BOT_NAME` when set and not empty: 1 to 39 of `[A-Za-z0-9._-]`, starting with a
+/// letter or digit.
+/// It names the required check run and shows in Markdown, so a bad one stops startup
+/// rather than falling back: a fallback would post a check run no ruleset requires.
+fn bot_name(value: Option<String>) -> Result<Option<String>, ConfigError> {
+    let Some(name) = value.filter(|v| !v.is_empty()) else {
+        return Ok(None);
+    };
+    let first = name
+        .bytes()
+        .next()
+        .is_some_and(|b| b.is_ascii_alphanumeric());
+    let rest = name
+        .bytes()
+        .all(|b| b.is_ascii_alphanumeric() || b".-_".contains(&b));
+    if first && rest && name.len() <= 39 {
+        Ok(Some(name))
+    } else {
+        Err(ConfigError::BadBotName)
+    }
+}
+
 fn split_list(v: &str) -> Vec<String> {
     v.split(',')
         .map(str::trim)
@@ -642,6 +675,33 @@ mod tests {
         let c = load(&[("JIRA_PROJECTS", " PROJ, ops ,,")]).unwrap();
         assert_eq!(c.jira_projects, ["PROJ", "OPS"]);
         assert!(load(&[]).unwrap().jira_projects.is_empty());
+    }
+
+    /// `BOT_NAME` unset or empty leaves the App's slug; a bad one stops startup.
+    #[test]
+    fn bot_name_unset_valid_and_bad_values() {
+        let long = "a".repeat(40);
+        let cases = [
+            (None, Ok(None)),
+            (Some("acme-review"), Ok(Some("acme-review"))),
+            (Some("Acme.Bot_2"), Ok(Some("Acme.Bot_2"))),
+            (Some("7"), Ok(Some("7"))),
+            (Some(&long[1..]), Ok(Some(&long[1..]))),
+            (Some(""), Ok(None)),
+            (Some(&long), Err(ConfigError::BadBotName)),
+            (Some("acme bot"), Err(ConfigError::BadBotName)),
+            (Some("acme#1"), Err(ConfigError::BadBotName)),
+            (Some("acme\nreview"), Err(ConfigError::BadBotName)),
+            (Some("-acme"), Err(ConfigError::BadBotName)),
+            (Some("akmé"), Err(ConfigError::BadBotName)),
+        ];
+        for (value, want) in cases {
+            let vars: Vec<(&str, &str)> = value.map(|v| ("BOT_NAME", v)).into_iter().collect();
+            let got = load(&vars).map(|c| c.bot_name);
+            assert_eq!(got, want.map(|n| n.map(str::to_owned)), "{value:?}");
+        }
+        let err = ConfigError::BadBotName.to_string();
+        assert!(err.starts_with("BOT_NAME: "), "{err}");
     }
 
     #[test]

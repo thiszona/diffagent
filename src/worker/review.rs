@@ -37,8 +37,8 @@ use crate::learn;
 use crate::model::Meter;
 use crate::plan::build_plan;
 use crate::render::{
-    FAILED_BANNER, RESOLVED_NOTE, REVIEWING_BANNER, TicketFit, Walkthrough, addressed_note,
-    is_banner, severity_label,
+    RESOLVED_NOTE, TicketFit, Walkthrough, addressed_note, failed_banner, is_banner,
+    reviewing_banner, severity_label,
 };
 use crate::review::{self, PrContext};
 use crate::scan::{self, Hit};
@@ -69,7 +69,7 @@ const VERIFY_LIMIT: Duration = Duration::from_secs(60);
 const DEMOTED: &str = "_A second check rated this major, not critical, so it does not block \
     the merge:_";
 
-/// Bounds the `FAILED_BANNER` edit and a Dead Review's check run, which run when the
+/// Bounds the failed banner's edit and a Dead Review's check run, which run when the
 /// job's own time may be spent.
 const BANNER_LIMIT: Duration = Duration::from_secs(10);
 
@@ -78,9 +78,6 @@ const COMPARE_CAP: usize = 300;
 
 /// The PR body's share of the intent, in bytes.
 const INTENT_BODY: usize = 4000;
-
-/// The merge gate's check run, which an operator makes a required check.
-const CHECK_NAME: &str = "diffagent";
 
 /// An Open Finding this severe or worse fails the merge gate, with a Thread or without
 /// one; an Open major below it is a warning, which greys the run. Only a critical
@@ -125,6 +122,7 @@ pub(super) async fn review(
     let pr = Pr::new(deps, job, &gh);
     let mut banner = Banner {
         gh: Arc::clone(&gh),
+        body: failed_banner(deps.bot_name()),
         path: None,
     };
     let result = pr.review(start, meter, report, gitleaks, &mut banner).await;
@@ -344,11 +342,13 @@ struct Found {
     focus: Vec<FileChange>,
 }
 
-/// Sets `FAILED_BANNER` on the status comment when the Review stops before its
+/// Sets [`failed_banner`] on the status comment when the Review stops before its
 /// walkthrough lands. An error sets it in [`review`]; a dropped future (the job's
 /// timeout) sets it from `Drop`, on a task of its own, since the job's time is spent.
 struct Banner {
     gh: Arc<Gh>,
+    /// The failed banner under the bot's name.
+    body: String,
     /// The status comment's edit path while the banner is owed.
     path: Option<String>,
 }
@@ -358,7 +358,7 @@ impl Banner {
     /// leaves the path for `Drop`, which sends it again, detached.
     async fn fail(&mut self) {
         if let Some(path) = self.path.clone() {
-            failed_banner(&self.gh, &path).await;
+            set_failed(&self.gh, &path, &self.body).await;
             self.path = None;
         }
     }
@@ -370,14 +370,14 @@ impl Drop for Banner {
             return;
         };
         if let Ok(rt) = tokio::runtime::Handle::try_current() {
-            let gh = Arc::clone(&self.gh);
-            rt.spawn(async move { failed_banner(&gh, &path).await });
+            let (gh, body) = (Arc::clone(&self.gh), self.body.clone());
+            rt.spawn(async move { set_failed(&gh, &path, &body).await });
         }
     }
 }
 
-async fn failed_banner(gh: &Gh, path: &str) {
-    let body = json!({"body": FAILED_BANNER});
+async fn set_failed(gh: &Gh, path: &str, body: &str) {
+    let body = json!({"body": body});
     match timeout(BANNER_LIMIT, gh.edit::<Value>(path, &body)).await {
         Ok(Ok(_)) => {}
         Ok(Err(e)) => warn!(err = %e, "could not mark the status comment failed"),
@@ -575,6 +575,7 @@ impl<'a> Pr<'a> {
         };
         walkthrough.head = head.to_owned();
         walkthrough.pr = format!("{} #{}", self.repo, job.pr);
+        walkthrough.bot_name = self.deps.bot_name().to_owned();
         walkthrough.merge_gate = cfg.merge_gate;
         if cfg.merge_gate {
             // The rows the gate reads once step 9 has written: found and carried.
@@ -860,8 +861,9 @@ impl<'a> Pr<'a> {
     /// 404, ours adopted by its banner text, else a new one. An unconfirmed post is
     /// looked for before it is sent again.
     async fn open_status(&self, saved: Option<i64>) -> Result<i64, JobError> {
+        let reviewing = reviewing_banner(self.deps.bot_name());
         if let Some(id) = saved {
-            match self.edit_comment(id, REVIEWING_BANNER).await {
+            match self.edit_comment(id, &reviewing).await {
                 Ok(()) => return Ok(id),
                 Err(GhError::NotFound) => {}
                 Err(e) => return Err(e.into()),
@@ -871,7 +873,7 @@ impl<'a> Pr<'a> {
             return Ok(id);
         }
         let path = self.path(&format!("issues/{}/comments", self.job.pr));
-        let banner = json!({"body": REVIEWING_BANNER});
+        let banner = json!({"body": reviewing});
         match self.gh.create::<Created>(&path, &banner).await {
             Ok(c) => Ok(c.id),
             Err(GhError::Ambiguous) => match self.adopt().await? {
@@ -882,9 +884,9 @@ impl<'a> Pr<'a> {
         }
     }
 
-    /// The oldest of our comments showing a banner, set back to `REVIEWING_BANNER`:
-    /// an earlier attempt's status comment whose id was never saved. Only
-    /// `<slug>[bot]` is us; a human's pasted banner is not.
+    /// The oldest of our comments showing a banner under the bot's name, set back to
+    /// [`reviewing_banner`]: an earlier attempt's status comment whose id was never
+    /// saved. Only `<slug>[bot]` is us; a human's pasted banner is not.
     async fn adopt(&self) -> Result<Option<i64>, GhError> {
         let listed: Vec<Listed> = self
             .gh
@@ -894,13 +896,14 @@ impl<'a> Pr<'a> {
             c.user
                 .as_ref()
                 .is_some_and(|u| u.login == self.deps.bot_login)
-                && is_banner(&c.body)
+                && is_banner(self.deps.bot_name(), &c.body)
         });
         let Some(c) = ours else {
             return Ok(None);
         };
-        if c.body != REVIEWING_BANNER {
-            self.edit_comment(c.id, REVIEWING_BANNER).await?;
+        let reviewing = reviewing_banner(self.deps.bot_name());
+        if c.body != reviewing {
+            self.edit_comment(c.id, &reviewing).await?;
         }
         Ok(Some(c.id))
     }
@@ -1517,7 +1520,8 @@ impl<'a> Pr<'a> {
                 None => return Ok(None),
             }
         }
-        Ok(Some(check_body(&open, failed, head, self.job)))
+        let name = self.deps.bot_name();
+        Ok(Some(check_body(name, &open, failed, head, self.job)))
     }
 
     /// The Open rows of the other open PRs at `head`, or `None` while one of them has
@@ -1668,9 +1672,15 @@ fn written_at(open: &[StoredFinding]) -> Option<&str> {
 /// The merge gate's check run at `head`: `failure` while an Open Finding blocks,
 /// `neutral` when none does but a warning is open or files failed (a model outage
 /// must not stop every merge), else `success`. Each run is created completed, so
-/// none goes stale and none is edited: GitHub shows the newest of a name. A Thread
-/// links to its own PR.
-fn check_body(open: &[StoredFinding], failed: &[String], head: &str, job: &Job) -> Value {
+/// none goes stale and none is edited: GitHub shows the newest of a name. The run is
+/// `name` (`BOT_NAME`), the name a ruleset requires. A Thread links to its own PR.
+fn check_body(
+    name: &str,
+    open: &[StoredFinding],
+    failed: &[String],
+    head: &str,
+    job: &Job,
+) -> Value {
     let mut listed: Vec<&StoredFinding> = open
         .iter()
         .filter(|f| f.severity >= Severity::Major)
@@ -1728,7 +1738,7 @@ fn check_body(open: &[StoredFinding], failed: &[String], head: &str, job: &Job) 
     let paths = failed.iter().map(|p| format!("- `{p}`"));
     capped_list(&mut summary, "Not reviewed", paths, failed.len());
     summary.push_str(&format!("#### How this clears\n\n{}", check_help()));
-    json!({"name": CHECK_NAME, "head_sha": head, "conclusion": conclusion,
+    json!({"name": name, "head_sha": head, "conclusion": conclusion,
         "output": {"title": title, "summary": summary}})
 }
 
@@ -3816,10 +3826,11 @@ pub(super) mod tests {
     /// reviewing; a human's banner is not ours; a saved id that 404s is replaced.
     #[tokio::test]
     async fn the_status_comment_is_adopted_by_banner_and_author() {
+        let (reviewing, failed) = (reviewing_banner("diffagent"), failed_banner("diffagent"));
         let t = Test::memory().await;
         t.pull(H1, vec![go("a.go", A_BAD)]);
-        let human = json!({"id": 1, "body": REVIEWING_BANNER, "user": {"login": "alice"}});
-        let ours = json!({"id": 2, "body": FAILED_BANNER, "user": {"login": BOT}});
+        let human = json!({"id": 1, "body": reviewing, "user": {"login": "alice"}});
+        let ours = json!({"id": 2, "body": failed, "user": {"login": BOT}});
         t.fake
             .world()
             .issue_comments
@@ -3828,7 +3839,7 @@ pub(super) mod tests {
         assert_eq!(t.state().await.status_comment_id, Some(2));
         let notes = t.notes();
         assert_eq!(notes.len(), 2, "nothing posted");
-        assert_eq!(notes[0].1, REVIEWING_BANNER, "the human's is untouched");
+        assert_eq!(notes[0].1, reviewing, "the human's is untouched");
         assert!(notes[1].1.starts_with("### diffagent review · "));
 
         let t = Test::memory().await;
@@ -3850,10 +3861,11 @@ pub(super) mod tests {
         assert_eq!(t.notes().len(), 1);
     }
 
-    /// A failure before the walkthrough lands sets `FAILED_BANNER`, also when the job's
+    /// A failure before the walkthrough lands sets [`failed_banner`], also when the job's
     /// timeout drops the Review mid-call; a failure after it leaves the walkthrough.
     #[tokio::test]
     async fn the_failed_banner_marks_an_unfinished_review() {
+        let failed = failed_banner("diffagent");
         let status = |t: &Test| {
             t.notes()
                 .first()
@@ -3874,7 +3886,7 @@ pub(super) mod tests {
             t.arm(fault);
             assert!(t.run(EVENT).await.is_err(), "{name}");
             assert_eq!(status(&t).contains("#### Summary"), landed, "{name}");
-            assert_eq!(status(&t) == FAILED_BANNER, !landed, "{name}");
+            assert_eq!(status(&t) == failed, !landed, "{name}");
         }
 
         let t = Test::memory().await;
@@ -3882,8 +3894,8 @@ pub(super) mod tests {
         t.script("a.go", Answer::Hang);
         let dropped = tokio::time::timeout(Duration::from_millis(500), t.review_with(GITLEAKS));
         assert!(dropped.await.is_err(), "timed out");
-        wait_for(|| status(&t) == FAILED_BANNER).await;
-        assert_eq!(status(&t), FAILED_BANNER, "set from Drop");
+        wait_for(|| status(&t) == failed).await;
+        assert_eq!(status(&t), failed, "set from Drop");
 
         // The timeout drops the error's own FAILED edit while it waits out a rate
         // limit: `Drop` sends it again.
@@ -3905,8 +3917,8 @@ pub(super) mod tests {
             w.log.iter().filter(|l| l.starts_with(prefix)).count()
         };
         assert!(edits(&t) >= 1, "the error's edit was sent");
-        wait_for(|| status(&t) == FAILED_BANNER).await;
-        assert_eq!(status(&t), FAILED_BANNER, "set from Drop");
+        wait_for(|| status(&t) == failed).await;
+        assert_eq!(status(&t), failed, "set from Drop");
     }
 
     /// Polls `done` for up to 2 s: a detached edit lands on its own time.
@@ -4269,6 +4281,70 @@ pub(super) mod tests {
             !comment.as_str().unwrap().contains("blocks merge"),
             "{comment}"
         );
+    }
+
+    /// The bot's name, `BOT_NAME` or else the slug `GET /app` gave at startup, names the
+    /// merge gate's check run and heads the Walkthrough, and our status comment showing
+    /// that name's banner is adopted.
+    #[tokio::test]
+    async fn the_bot_name_names_the_check_run_and_the_status_comment() {
+        // (BOT_NAME, the App's slug, the check run's name, the Walkthrough's heading)
+        let cases = [
+            (
+                None,
+                "diffagent",
+                "diffagent",
+                "### diffagent review · o/r #1\n",
+            ),
+            (
+                None,
+                "acme-review",
+                "acme-review",
+                "### acme-review · o/r #1\n",
+            ),
+            (
+                Some("acme"),
+                "diffagent",
+                "acme",
+                "### acme review · o/r #1\n",
+            ),
+            (
+                Some("acme"),
+                "acme-review",
+                "acme",
+                "### acme review · o/r #1\n",
+            ),
+            (
+                Some("Lint-Review"),
+                "diffagent",
+                "Lint-Review",
+                "### Lint-Review · o/r #1\n",
+            ),
+        ];
+        for (bot_name, slug, run_name, heading) in cases {
+            let mut vars = GATED.to_vec();
+            vars.extend(bot_name.map(|n| ("BOT_NAME", n)));
+            let mut t = Test::new(Arc::new(MemoryStore::default()), &vars, NOWHERE).await;
+            // As at startup: the bot login, and so the slug, from `GET /app`.
+            t.fake.world().slug = slug.to_owned();
+            let login = t.deps.github.bot_login().await.unwrap();
+            Arc::get_mut(&mut t.deps).unwrap().bot_login = login.clone();
+            assert_eq!(t.deps.bot_name(), run_name);
+            t.pull(H1, vec![go("b.go", B_LINE)]);
+            let ours = json!({"id": 2, "body": failed_banner(run_name), "user": {"login": login}});
+            t.fake.world().issue_comments.push((1, ours));
+            t.script(
+                "b.go",
+                one("critical", "concurrency", "Goroutine leak", B_LINE),
+            );
+            t.run(EVENT).await.unwrap();
+            assert_eq!(checks(&t.fake), [gate(H1, "failure")], "{run_name}");
+            assert_eq!(t.fake.world().check_runs[0]["name"], run_name);
+            assert_eq!(t.state().await.status_comment_id, Some(2), "{run_name}");
+            let notes = t.notes();
+            assert_eq!(notes.len(), 1, "{run_name}: adopted, none posted");
+            assert!(notes[0].1.starts_with(heading), "{}", notes[0].1);
+        }
     }
 
     /// A check run that got a 502 is sent again in-process. One refused fails the
@@ -4712,8 +4788,8 @@ pub(super) mod tests {
             ),
         ];
         for (name, open, failed, conclusion, title, parts) in cases {
-            let body = check_body(&open, &failed, H1, &job("alice", EVENT));
-            assert_eq!(body["name"], CHECK_NAME, "{name}");
+            let body = check_body("diffagent", &open, &failed, H1, &job("alice", EVENT));
+            assert_eq!(body["name"], "diffagent", "{name}");
             assert_eq!(body["head_sha"], H1, "{name}");
             assert_eq!(body["conclusion"], conclusion, "{name}");
             assert_eq!(body["output"]["title"], title, "{name}");

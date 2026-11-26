@@ -1,8 +1,10 @@
 # Merge gate
 
 The Merge gate is your App's check run on your repositories, which your rulesets can
-require. With `ENABLE_MERGE_GATE=true` the bot posts a check run named `diffagent` on the
-PR's head.
+require. With `ENABLE_MERGE_GATE=true` the bot posts a check run on the PR's head that
+carries the bot's name: your App's slug, unless `BOT_NAME` is set. A ruleset requires the
+check by that name, so renaming the App or changing `BOT_NAME` means changing the ruleset
+with it.
 
 The run fails while a critical Finding is open, in a Thread or not. An open major is a
 warning: it makes the run `neutral`, which passes, and so does a Review that could not
@@ -69,13 +71,14 @@ one, else `neutral` ("Review failed"), so its PR is not blocked unexplained.
    accept it on each installation.
 2. Set `ENABLE_MERGE_GATE=true` and redeploy. Every reviewed PR then shows the check, not
    yet required.
-3. In a sandbox repo, once a run has passed, add a ruleset requiring `diffagent` with its
-   source pinned to your App. Check that:
+3. In a sandbox repo, once a run has passed, add a ruleset requiring the check by the
+   bot's name (the App's slug, or `BOT_NAME`) with its source pinned to your App. Check
+   that:
    - a known critical blocks the merge;
    - a Maintainer's `resolve` passes the same head;
    - a `review` command there that finds it again blocks again;
    - a lone major shows `neutral` and does not block;
-   - a commit status named `diffagent` from anyone else does not satisfy the rule;
+   - a commit status of the same name from anyone else does not satisfy the rule;
    - the author's own `resolve` changes nothing, and neither does that of a writer who
      pushed to the PR.
 4. On your other repos' default branches, require it the same way, preferably as rulesets,

@@ -22,7 +22,7 @@ use crate::config::Config;
 use crate::context::GoCtx;
 use crate::github::{Gh, GhError, Github};
 use crate::jira::Jira;
-use crate::job::{Job, Kind};
+use crate::job::{self, Job, Kind};
 use crate::model::{Meter, RoleUsage, Router};
 use crate::plan::OutcomeStats;
 use crate::state::{Claimed, JobEnd, ModelRole, Store, StoreError, Usage};
@@ -64,6 +64,15 @@ pub struct Deps {
 }
 
 impl Deps {
+    /// The bot's name: `BOT_NAME`, else the App's slug from [`Deps::bot_login`]. It
+    /// names the merge gate's check run and heads the status comment.
+    pub fn bot_name(&self) -> &str {
+        self.cfg
+            .bot_name
+            .as_deref()
+            .unwrap_or_else(|| job::slug(&self.bot_login))
+    }
+
     /// The job's installation client. A 401 or 403 minting its token (a bad App key, a
     /// suspended installation) ends the job Dead. The same status on any other call
     /// stays a GitHub error, retried: a secondary rate limit can be a 403 with no header.

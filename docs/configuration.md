@@ -1,9 +1,9 @@
 # Configuration
 
 diffagent reads its settings from the environment (`src/config.rs`). An empty value counts
-as unset; a number or duration that does not parse, or a NaN or negative price, falls back
-to its default with a warning naming the variable (never its value). Durations use Go's
-syntax (`90s`, `4m`, `8760h`).
+as unset; a number or duration that does not parse, or a NaN or
+negative price, falls back to its default with a warning naming the variable (never its
+value). Durations use Go's syntax (`90s`, `4m`, `8760h`).
 
 | Variable | Default | Meaning |
 |---|---|---|
@@ -18,7 +18,8 @@ syntax (`90s`, `4m`, `8760h`).
 | `ENABLE_GITLEAKS` | off | `true` scans the PR head for secrets with gitleaks. |
 | `GITLEAKS_CONFIG_PATH` | gitleaks' defaults | A gitleaks config file. |
 | `COMMITTABLE_SUGGESTIONS` | off | `true` posts one-click suggestion blocks; off posts advisory diffs. |
-| `ENABLE_MERGE_GATE` | off | `true` posts the `diffagent` check run; needs Checks: write. |
+| `ENABLE_MERGE_GATE` | off | `true` posts the [Merge gate](merge-gate.md)'s check run, under the bot's name (`BOT_NAME`); needs Checks: write. |
+| `BOT_NAME` | the App's slug; `diffagent` without an App | The bot's name: the Merge gate's check run, which a ruleset requires by that name, and the status comment's and Walkthrough's heading (`### <name> review`, or `### <name>` when the name already ends in `review`). 1 to 39 of `A-Z a-z 0-9 . _ -`, starting with a letter or digit; anything else stops startup. The `@` handle stays the App's slug. |
 | `BEDROCK_REGION` | unset: the AWS SDK's region chain | Bedrock's region. Unset, the SDK picks it (`AWS_REGION`, the profile, instance metadata). Credentials: any AWS SDK source, or `AWS_BEARER_TOKEN_BEDROCK`. |
 | `BEDROCK_MODEL_ID` | `global.anthropic.claude-haiku-4-5-20251001-v1:0` | Review model on Bedrock: Claude Haiku 4.5 through a global cross-region profile. |
 | `BEDROCK_SUMMARY_MODEL_ID` | the review model | Walkthrough model on Bedrock. |

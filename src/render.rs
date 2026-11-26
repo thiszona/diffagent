@@ -11,23 +11,47 @@ use crate::diff::normalize_code;
 use crate::finding::{Finding, Severity};
 use crate::job::mention;
 
+/// The bot's name without an App to take a slug from: dev mode and diffagent-eval.
+const DEFAULT_BOT_NAME: &str = "diffagent";
+
+/// The status comment's heading for the bot `name` (`Deps::bot_name`):
+/// `### {name} review`, or `### {name}` when the name already ends in "review", so it
+/// never reads "review review".
+fn title(name: &str) -> String {
+    if name.to_ascii_lowercase().ends_with("review") {
+        format!("### {name}")
+    } else {
+        format!("### {name} review")
+    }
+}
+
 /// The placeholder posted the moment a Review starts; it is edited into the
 /// Walkthrough when the Review completes, so the PR shows one comment that morphs.
-pub const REVIEWING_BANNER: &str = "### diffagent review\n\n\
-     > [!NOTE]\n\
-     > **Review in progress.** This comment becomes the review report when the review \
-     completes.";
+pub fn reviewing_banner(name: &str) -> String {
+    format!(
+        "{}\n\n\
+         > [!NOTE]\n\
+         > **Review in progress.** This comment becomes the review report when the review \
+         completes.",
+        title(name)
+    )
+}
 
-/// Replaces [`REVIEWING_BANNER`] when the Review could not complete. The job is
+/// Replaces [`reviewing_banner`] when the Review could not complete. The job is
 /// retried, so the next attempt (or the next push) runs it again.
-pub const FAILED_BANNER: &str = "### diffagent review\n\n\
-     > [!WARNING]\n\
-     > **Review interrupted.** It could not complete and will retry.";
+pub fn failed_banner(name: &str) -> String {
+    format!(
+        "{}\n\n\
+         > [!WARNING]\n\
+         > **Review interrupted.** It could not complete and will retry.",
+        title(name)
+    )
+}
 
-/// Whether `body` is exactly a status comment's banner: what a Review adopts as its
-/// status comment. A Walkthrough never is one.
-pub fn is_banner(body: &str) -> bool {
-    body == REVIEWING_BANNER || body == FAILED_BANNER
+/// Whether `body` is exactly a status comment's banner under the bot `name`: what a
+/// Review adopts as its status comment. A Walkthrough never is one.
+pub fn is_banner(name: &str, body: &str) -> bool {
+    body == reviewing_banner(name) || body == failed_banner(name)
 }
 
 /// GitHub refuses a comment longer than 65,536 characters with a 422, which ends a
@@ -83,6 +107,8 @@ pub struct Walkthrough {
     pub head: String,
     /// `owner/repo #N`, for the heading; empty when unknown.
     pub pr: String,
+    /// The bot's name, for the heading; empty is [`DEFAULT_BOT_NAME`].
+    pub bot_name: String,
     /// The merge gate runs, so an open critical Finding blocks the merge.
     pub merge_gate: bool,
     /// The Open Findings that fail the merge gate once this Review's rows are written;
@@ -186,7 +212,12 @@ fn severity_header(f: &Finding, symbol: Option<&str>, blocks: bool) -> String {
 /// lines, the review load, and how many of the `located` Findings' locations matched
 /// the diff (`verified`).
 pub fn render_heading(w: &Walkthrough, verified: usize, located: usize) -> String {
-    let mut b = String::from("### diffagent review");
+    let name = if w.bot_name.is_empty() {
+        DEFAULT_BOT_NAME
+    } else {
+        &w.bot_name
+    };
+    let mut b = title(name);
     if !w.pr.is_empty() {
         b.push_str(&format!(" · {}", w.pr));
     }
@@ -850,9 +881,10 @@ mod tests {
     /// Our banners are adopted; a Walkthrough or an edited banner is not.
     #[test]
     fn banners_are_recognized() {
+        let (reviewing, failed) = (reviewing_banner("diffagent"), failed_banner("diffagent"));
         let cases = [
-            (REVIEWING_BANNER, true),
-            (FAILED_BANNER, true),
+            (reviewing.as_str(), true),
+            (failed.as_str(), true),
             (
                 "> [!NOTE]\n> **diffagent** is on it — analyzing the diff + cross-file context.",
                 false,
@@ -861,7 +893,64 @@ mod tests {
             ("", false),
         ];
         for (body, want) in cases {
-            assert_eq!(is_banner(body), want, "{body}");
+            assert_eq!(is_banner("diffagent", body), want, "{body}");
+        }
+    }
+
+    /// `BOT_NAME` heads the banners and the Walkthrough, without "review review"; only
+    /// the configured name's banners are ours, and an "is on it" note never is one.
+    #[test]
+    fn banners_and_heading_carry_the_bot_name() {
+        // (name, heading)
+        let cases = [
+            ("diffagent", "### diffagent review"),
+            ("acme", "### acme review"),
+            ("acme-review", "### acme-review"),
+            ("Acme_REVIEW", "### Acme_REVIEW"),
+            ("review", "### review"),
+            ("reviewer", "### reviewer review"),
+        ];
+        for (name, heading) in cases {
+            let reviewing = reviewing_banner(name);
+            assert_eq!(
+                reviewing,
+                format!(
+                    "{heading}\n\n> [!NOTE]\n> **Review in progress.** This comment becomes the \
+                     review report when the review completes."
+                ),
+                "{name}"
+            );
+            let failed = failed_banner(name);
+            assert_eq!(
+                failed,
+                format!(
+                    "{heading}\n\n> [!WARNING]\n> **Review interrupted.** It could not complete \
+                     and will retry."
+                ),
+                "{name}"
+            );
+            assert!(
+                is_banner(name, &reviewing) && is_banner(name, &failed),
+                "{name}"
+            );
+            let other = format!("{name}2");
+            assert!(!is_banner(&other, &reviewing), "{name}");
+            assert!(!is_banner(&other, &failed), "{name}");
+            let on_it = format!(
+                "> [!NOTE]\n> **{name}** is on it — analyzing the diff + cross-file context."
+            );
+            assert!(!is_banner(name, &on_it), "{name}");
+
+            let w = Walkthrough {
+                bot_name: name.to_owned(),
+                pr: "acme/shop #42".to_owned(),
+                ..Walkthrough::default()
+            };
+            assert_eq!(
+                render_heading(&w, 0, 0),
+                format!("{heading} · acme/shop #42\n"),
+                "{name}"
+            );
         }
     }
 

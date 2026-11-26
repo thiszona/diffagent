@@ -32,7 +32,12 @@ pub fn set_mention(bot_login: &str) {
 
 /// `@<slug>` from a bot login, `<slug>[bot]`.
 fn mention_of(bot_login: &str) -> String {
-    format!("@{}", bot_login.strip_suffix("[bot]").unwrap_or(bot_login))
+    format!("@{}", slug(bot_login))
+}
+
+/// The App's slug from its bot login, `<slug>[bot]`.
+pub fn slug(bot_login: &str) -> &str {
+    bot_login.strip_suffix("[bot]").unwrap_or(bot_login)
 }
 
 /// A push's Review waits this long, so a burst of pushes (a rebase, fixup spam) collapses:

@@ -3,7 +3,8 @@
 ## Install a GitHub App
 
 Create a GitHub App in your account or organization settings, under Developer settings ›
-GitHub Apps › New GitHub App. Its name sets its slug, the handle the bot answers to.
+GitHub Apps › New GitHub App. Its name sets its slug, the handle the bot answers to and,
+unless `BOT_NAME` is set, the name on its check run and status comment.
 
 Make the webhook active, with the URL `https://<your-host>/webhook` and a random secret.
 The same secret is `GITHUB_WEBHOOK_SECRET`.
@@ -15,7 +16,7 @@ Give it these repository permissions:
 | Pull requests | Read and write | Read the PR and its files; post the GitHub review and its inline comments |
 | Contents | Read and write | Clone the head; resolving review threads needs write |
 | Issues | Read and write | The status comment, the Walkthrough and the notes on the PR |
-| Checks | Read and write | Only with the [Merge gate](merge-gate.md): the `diffagent` check run |
+| Checks | Read and write | Only with the [Merge gate](merge-gate.md): its check run, named after the App's slug or `BOT_NAME` |
 | Metadata | Read | Required by GitHub |
 
 Subscribe to the events Pull request, Issue comment and Pull request review comment
