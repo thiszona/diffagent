@@ -42,10 +42,11 @@ A blocking Finding leaves only by:
   open.
 
 A secret Finding (critical security, titled "Hardcoded secret") leaves by a push only where
-gitleaks ran (`ENABLE_GITLEAKS=true`) over its file's patch and the model was sent the
-file: the model can write that title too, so neither alone proves the secret is gone. One
-in a config or test file, which the model is not sent, leaves by `resolve`, after the
-secret is rotated.
+gitleaks ran (`ENABLE_GITLEAKS=true`) over its file's patch and no longer finds it. In a
+file the model is sent, the model must not find it either: the model can write that title
+too, so neither alone proves the secret is gone. A config or test file is never sent to
+the model, so every Finding there is gitleaks', and gitleaks alone decides. A secret that
+was pushed stays in the branch's history: rotate it as well.
 
 A warning also leaves by a Maintainer's command in its Thread: `learn`, confirming the
 Lesson a false positive or won't fix proposed, or `close`. A reply alone closes nothing,

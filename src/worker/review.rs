@@ -489,7 +489,10 @@ impl<'a> Pr<'a> {
         // whole file (its patch is gone or cut, it turned generated), or, for a row
         // titled as gitleaks titles its Findings, gitleaks did not run over the file's
         // patch, the only lines it is matched against. The model writes titles too, so
-        // such a row needs both.
+        // such a row needs both, except on a path the model is never sent by its name
+        // (a test or config file): the model reports only on the file it is sent, and a
+        // stored Finding keeps its path across a rename, so every row there is gitleaks'
+        // and gitleaks alone looks.
         let unsent = unsent_paths(&scope, &found.focus);
         let scanned = cfg.enable_gitleaks && !found.unscanned;
         let patched = |p: &str| {
@@ -499,7 +502,9 @@ impl<'a> Pr<'a> {
         };
         let (resolved, unjudged): (Vec<_>, Vec<_>) = rec.resolved.into_iter().partition(|o| {
             let secret = scan::from_gitleaks(o.severity, o.category, &o.title);
-            !unsent.contains(&o.path) && (!secret || (scanned && patched(&o.path)))
+            let gitleaks_only = secret && !review::sent_by_path(&o.path);
+            (gitleaks_only || !unsent.contains(&o.path))
+                && (!secret || (scanned && patched(&o.path)))
         });
         rec.resolved = resolved;
         rec.carried.extend(unjudged);
@@ -2915,35 +2920,57 @@ pub(super) mod tests {
     }
 
     /// A gitleaks Finding resolves once gitleaks, run over its file's patch, no longer
-    /// finds it. A push that keeps the secret but leaves the file with no patch keeps it
-    /// open: gitleaks' hits count only on a patch's added lines.
+    /// finds it, in a file the model is sent and in a test file it never is. A push that
+    /// keeps the secret but leaves the file with no patch keeps it open: gitleaks' hits
+    /// count only on a patch's added lines.
     #[tokio::test]
     async fn a_secret_resolves_only_where_gitleaks_saw_the_patch() {
         let secret = "var key = \"DIFFAGENT_FAKE_SECRET_7f3a\"";
         let first = format!("package a\n\n{secret}\n");
         let kept = format!("{first}\nvar more = 1\n");
         let blank = "var key = \"\"";
-        let removed = added("a.go", &["package a", "", blank]);
-        let no_patch = json!({"filename": "a.go", "status": "modified"});
-        // (name, a.go at the second commit, its listing, resolved)
+        let cleared = format!("package a\n\n{blank}\n");
+        let removed = |path: &str| added(path, &["package a", "", blank]);
+        let no_patch = |path: &str| json!({"filename": path, "status": "modified"});
+        // (name, path, the file at the second commit, its listing, resolved)
         let cases = [
-            ("removed", format!("package a\n\n{blank}\n"), removed, true),
-            ("kept, no patch", kept, no_patch, false),
+            ("removed", "a.go", cleared.clone(), removed("a.go"), true),
+            (
+                "kept, no patch",
+                "a.go",
+                kept.clone(),
+                no_patch("a.go"),
+                false,
+            ),
+            (
+                "a test file, removed",
+                "a_test.go",
+                cleared,
+                removed("a_test.go"),
+                true,
+            ),
+            (
+                "a test file, kept, no patch",
+                "a_test.go",
+                kept,
+                no_patch("a_test.go"),
+                false,
+            ),
         ];
-        for (i, (name, text, listed, resolved)) in cases.into_iter().enumerate() {
+        for (i, (name, path, text, listed, resolved)) in cases.into_iter().enumerate() {
             let tmp = scratch(&format!("secret-{i}"));
-            let commits: [&[(&str, &str)]; 2] = [&[("a.go", &first)], &[("a.go", &text)]];
+            let commits: [&[(&str, &str)]; 2] = [&[(path, &first)], &[(path, &text)]];
             let (remote, shas) = remote_repo(&tmp, "o/r", &commits);
             let vars = [("ENABLE_GITLEAKS", "true")];
             let t = Test::new(Arc::new(MemoryStore::default()), &vars, &remote).await;
             let gitleaks = fake_gitleaks(&tmp);
-            t.pull(&shas[0], vec![added("a.go", &["package a", "", secret])]);
+            t.pull(&shas[0], vec![added(path, &["package a", "", secret])]);
             t.review_with(&gitleaks).await.0.unwrap();
             let open = t.findings(FindingStatus::Open).await;
             assert!(open[0].title.starts_with("Hardcoded secret"), "{name}");
 
             t.pull(&shas[1], vec![listed]);
-            t.compare(&shas[0], &shas[1], &[("a.go", None)]);
+            t.compare(&shas[0], &shas[1], &[(path, None)]);
             t.review_with(&gitleaks).await.0.unwrap();
             let open = t.findings(FindingStatus::Open).await;
             assert_eq!(open.is_empty(), resolved, "{name}");
